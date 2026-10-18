@@ -1,0 +1,4 @@
+# written<TAB>spoken respellings for the TTS voice only (whole-word, case-sensitive).
+# Add a term only after hearing it mispronounced; WORK/lexicon.tsv adds per-lecture terms.
+Schmid	Shmit
+Peierls	Pie-erls

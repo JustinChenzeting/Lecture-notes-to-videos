@@ -1,0 +1,42 @@
+% beamerthemelecturevideo.sty -- quiet academic slides for narrated lecture videos.
+% Ivory paper, dark ink, one red accent, serif headings over a clean sans body.
+% Built on moloch (TeX Live 2024+); falls back to metropolis or beamer's default theme,
+% and to Latin Modern fonts, so it still compiles on older or minimal TeX installs.
+% Colours (ink, accent, mute, paper, lvlight, lvrule, ...) are defined by lecturevideo.sty.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerthemelecturevideo}[2026/10/18]
+\IfFileExists{beamerthememoloch.sty}
+  {\usetheme[progressbar=frametitle,sectionpage=progressbar]{moloch}}
+  {\IfFileExists{beamerthememetropolis.sty}{\usetheme[progressbar=frametitle]{metropolis}}{\usetheme{default}}}
+\setbeamertemplate{navigation symbols}{}
+\RequirePackage[T1]{fontenc}
+\IfFileExists{newpxtext.sty}{\RequirePackage{newpxtext}}{\RequirePackage{lmodern}}
+\IfFileExists{sourcesanspro.sty}{\RequirePackage[default]{sourcesanspro}}{\renewcommand\familydefault{\sfdefault}}
+\IfFileExists{sourcecodepro.sty}{\RequirePackage[scale=0.9]{sourcecodepro}}{}
+\usefonttheme{professionalfonts}
+\IfFileExists{newpxmath.sty}{\RequirePackage{newpxmath}}{}
+\RequirePackage{booktabs,graphicx}
+
+\setbeamercolor{normal text}{fg=ink,bg=paper}
+\setbeamercolor{background canvas}{bg=paper}
+\setbeamercolor{alerted text}{fg=accent}
+\setbeamercolor{example text}{fg=accent}
+\setbeamercolor{structure}{fg=accent}
+\setbeamercolor{item}{fg=accent}
+\setbeamercolor{frametitle}{fg=ink,bg=paper}
+\setbeamercolor{progress bar}{fg=ink,bg=accent}
+\setbeamercolor{title separator}{fg=accent}
+\setbeamercolor{block title}{fg=ink,bg=lvlight}
+\setbeamercolor{block body}{fg=ink,bg=paper}
+\setbeamercolor{block title alerted}{fg=white,bg=accent}
+\setbeamercolor{block body alerted}{fg=ink,bg=lvlight}
+\setbeamercolor{footline}{fg=mute}
+\setbeamercolor{page number in head/foot}{fg=mute}
+\setbeamercolor{standout}{fg=white,bg=accent}
+\setbeamertemplate{blocks}[default]
+
+\setbeamerfont{title}{family=\rmfamily,series=\mdseries,size=\LARGE}
+\setbeamerfont{subtitle}{family=\rmfamily,shape=\itshape}
+\setbeamerfont{frametitle}{family=\rmfamily,series=\bfseries}
+\setbeamerfont{institute}{size=\small}
+\endinput

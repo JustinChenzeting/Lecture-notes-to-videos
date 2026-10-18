@@ -1,7 +1,7 @@
 ---
 name: lecture-notes-to-video
 description: Turn lecture notes (typed or handwritten PDFs, scans, phone photos, Markdown) into a narrated lecture video (MP4) with clean academic slides, step-by-step animated diagrams, a natural British narrator, and exam-style checkpoint questions that pause with a countdown before revealing the answer. Self-installing and fully automated - one script sets up Python, LaTeX, ffmpeg and offline voices on macOS, Linux or Windows, then renders the video. Use this whenever the user wants a lecture, notes, slides, handout, chapter or problem set turned into a video, a narrated walkthrough, a "lecture recording", an explainer with visuals, or a study video to watch or revise from - even if they just say "make this into a video" or "explain lecture 5 to me as a video".
-license: MIT (see LICENSE.txt)
+license: MIT (see LICENSE)
 compatibility: Needs a shell, Python 3.8+ and internet on first run (downloads about 300 MB into a user cache - Python packages, offline voices, ffmpeg, and TinyTeX when no LaTeX is installed). Tested on macOS and Linux; Windows support is untested. Image viewing is needed for handwritten notes and recommended for checking slides.
 metadata:
   version: "2.0.0"

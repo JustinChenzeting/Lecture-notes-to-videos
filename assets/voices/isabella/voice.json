@@ -1,0 +1,8 @@
+{
+  "label": "Isabella (British female, Kokoro)",
+  "aliases": ["isabella", "bf_isabella"],
+  "engine": "kokoro",
+  "voice": "bf_isabella",
+  "rate": "+10%",
+  "notes": "Offline Kokoro voice; sample.wav is an audition clip only. Synthesis uses the Kokoro model downloaded by setup.sh."
+}

@@ -1,0 +1,32 @@
+{
+  "skill_name": "lecture-notes-to-video",
+  "evals": [
+    {
+      "id": 1,
+      "name": "markdown-damped-oscillator",
+      "prompt": "I've got my notes for PHYS 1112 lecture 9 (damped harmonic motion) in inputs/damped_oscillator.md. Can you turn them into a short narrated study video? ~3 minutes is plenty.",
+      "expected_output": "An MP4 of roughly 2.5-3.5 minutes with slides, diagrams, narration and at least one checkpoint, plus a report listing corrections/omissions.",
+      "files": [
+        "inputs/damped_oscillator.md"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "handwritten-photo-thermo-isabella",
+      "prompt": "here's a photo of my handwritten thermo notes from today: inputs/thermo_notes.jpg - make me a 2 minute explainer video from it, with at least one checkpoint question. use the isabella voice pls",
+      "expected_output": "Transcript of the handwritten page, an MP4 of roughly 1.5-2.5 minutes narrated with the Kokoro bf_isabella profile, with a checkpoint question.",
+      "files": [
+        "inputs/thermo_notes.jpg"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "pdf-rc-circuit-with-figure",
+      "prompt": "Make a lecture video from inputs/rc.pdf (ECE 2100 lecture 6 on RC circuits). Keep it to about 4 minutes.",
+      "expected_output": "An MP4 of roughly 3.5-4.5 minutes that redraws the charge/current figure in TikZ, derives q(t) without skipped steps, includes checkpoints.",
+      "files": [
+        "inputs/rc.pdf"
+      ]
+    }
+  ]
+}

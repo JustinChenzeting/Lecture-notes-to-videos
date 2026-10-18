@@ -1,0 +1,10 @@
+# Installed by `lv.py setup` into LECTURE_VIDEO_CACHE/venv (Python 3.12). All are binary wheels:
+# no compiler, Homebrew or apt packages needed on macOS, Linux (x86_64/arm64) or Windows.
+edge-tts>=7.0            # default narrator (Microsoft Edge neural voices, online, free)
+kokoro-onnx>=0.4.7,<0.6  # offline British voices; bundles espeak-ng via espeakng-loader
+soundfile>=0.12
+numpy>=1.26
+pypdfium2>=4.30          # PDF text + page images (replaces poppler)
+Pillow>=10.0             # image pages, glance and contact sheets
+pillow-heif>=0.16        # iPhone .heic photos of notes
+imageio-ffmpeg>=0.5      # static ffmpeg with libx264, used when the system has none

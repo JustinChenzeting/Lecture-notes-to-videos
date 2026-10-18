@@ -1,0 +1,112 @@
+% lecturevideo.sty -- narration, animation and checkpoint layer for narrated lecture videos.
+% Load with \usepackage{lecturevideo} in a beamer[aspectratio=169] document.
+% Provides: \say<ov>{text}  \wait<ov>{sec}  \lvanim{first}{n}{code}  \examq[...]{...}  \lvlogo{file}
+% render_lecture.py reads the page-accurate narration map <job>.narr that this file writes.
+% Look: the built-in theme (beamerthemelecturevideo.sty). A lecturevideo-brand.sty in the work
+% folder or in the config folder's tex/ replaces it (references/customization.md).
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{lecturevideo}[2026/10/18]
+\RequirePackage{xcolor}
+
+% ---- palette: one accent for emphasis, results and state markers (a brand file may redefine) ----
+\definecolor{ink}{HTML}{222222}\definecolor{accent}{HTML}{B31B1B}\definecolor{mute}{HTML}{595959}
+\definecolor{blu}{HTML}{006699}\definecolor{grn}{HTML}{4B7B2B}\definecolor{gold}{HTML}{D47500}
+\definecolor{paper}{HTML}{FBF9F1}\definecolor{lvlight}{HTML}{F7F7F7}\definecolor{lvrule}{HTML}{CCCCCC}
+
+% ---- optional logo: \lvlogo{file} puts it at the upper left of every frame title and on the
+% title page (unless the theme already sets \titlegraphic). Empty by default.
+\def\lv@logo{}
+\newcommand{\lvlogo}[1]{\gdef\lv@logo{#1}}
+
+\IfFileExists{lecturevideo-brand.sty}{\RequirePackage{lecturevideo-brand}}{\usetheme{lecturevideo}}
+\RequirePackage{tikz,pgfplots,booktabs,amssymb}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,positioning,calc,decorations.markings}
+
+% ---- figure defaults: no pgfplots cycle markers, readable labels -----------
+\pgfplotsset{pd/.style={width=9cm,height=6.2cm,axis lines=left,tick label style={font=\scriptsize},
+  label style={font=\small},cycle list={{ink,thick,mark=none}},every axis plot/.append style={thick},
+  /pgf/number format/1000 sep={}}}
+\tikzset{dot/.style={circle,fill=accent,inner sep=2.2pt},
+  lab/.style={font=\small\bfseries,text=ink},note/.style={font=\footnotesize,text=accent,align=left},
+  tie/.style={blu,very thick},atom/.style={circle,draw=ink!70,fill=lvlight,inner sep=0pt,minimum size=9pt},
+  atomA/.style={atom,fill=blu!60},atomB/.style={atom,fill=accent!75},hot/.style={circle,draw=accent,very thick}}
+\newcommand{\dg}{$^\circ$C}
+
+% ---- logo hooks ----
+\addtobeamertemplate{frametitle}{\ifx\lv@logo\@empty\else\let\lv@ft\insertframetitle
+  \def\insertframetitle{\raisebox{-0.28em}{\includegraphics[height=1.25em]{\lv@logo}}\hspace{0.55em}\lv@ft}\fi}{}
+\AtBeginDocument{\ifx\lv@logo\@empty\else\ifx\inserttitlegraphic\@empty
+  \titlegraphic{\includegraphics[height=0.46in]{\lv@logo}}\fi\fi}
+% Voice credit on the title page, set by render_lecture.py for cloned voices (\lvvoicecredit).
+\providecommand\lvvoicecredit{}
+\addtobeamertemplate{title page}{}{\ifx\lvvoicecredit\@empty\else
+  \par\vspace{1.2em}{\color{mute}\scriptsize\lvvoicecredit\par}\fi}
+\setbeamertemplate{footline}{\hfill{\color{mute}\scriptsize\insertshorttitle\hspace{1.2em}\insertframenumber}\hspace{4mm}\vspace{2.5mm}}
+
+% ---- narration map ----------------------------------------------------------
+% Non-immediate \write fires at shipout, so \thepage is the real PDF page and only
+% the overlays selected by \only receive the line.
+\newwrite\lv@narr
+\AtBeginDocument{\immediate\openout\lv@narr=\jobname.narr}
+% Record: page|kind|frame|ordinal|overlay spec|text. The ordinal counts \say/\wait calls
+% within one overlay pass of a frame; the spec is expanded now, so macro-built specs
+% (e.g. in \examq) are recorded as numbers. The renderer joins pages into one spoken span
+% only for a range spec such as <2-13>, never because two lines happen to match.
+\newcount\lv@ord \def\lv@pass{}
+\def\lv@next{\edef\lv@here{\insertframenumber.\the\beamer@slideinframe}%
+  \ifx\lv@here\lv@pass\global\advance\lv@ord by 1\relax\else\global\lv@ord=1\relax\xdef\lv@pass{\lv@here}\fi}
+\def\lv@emit#1#2#3{\lv@next\edef\lv@w{\noexpand\write\lv@narr{\noexpand\thepage|#1|\insertframenumber|%
+  \the\lv@ord|#2|\unexpanded{\detokenize{#3}}}}\only#2{\lv@w}}
+\newcommand<>{\say}[1]{\lv@emit{say}{#2}{#1}}
+\newcommand<>{\wait}[1]{\lv@emit{wait}{#2}{#1}}
+
+% ---- animation: \lvanim{first overlay}{frames}{tikz code using \lvt in [0,1]} --
+% Pair with one \say<first-last>{...}: the renderer plays the frames quickly, then
+% holds the last one while the sentence finishes. \lvt is global, so it also works inside
+% pgfplots axes (which draw at \end{axis}): there, write math straight into coordinates,
+% e.g. (axis cs:50,{8.7-5.7*\lvt}), instead of \pgfmathsetmacro helpers.
+\newcommand{\lvanim}[3]{%
+  \pgfmathtruncatemacro\lv@last{#2-1}%
+  \foreach \lv@k in {0,...,\lv@last}{%
+    \pgfmathtruncatemacro\lv@slide{#1+\lv@k}%
+    \pgfmathsetmacro\lv@t{\lv@k/max(\lv@last,1)}%
+    \only<\lv@slide>{\xdef\lvt{\lv@t}#3}}}
+
+% ---- countdown ring ---------------------------------------------------------
+\newcommand{\lvring}[2]{% remaining, total
+  \begin{tikzpicture}
+  \draw[lvrule,line width=3pt] (0,0) circle (0.75);
+  \pgfmathsetmacro\lv@ang{90-360*#1/#2}
+  \draw[accent,line width=3pt] (0,0.75) arc[start angle=90,end angle=\lv@ang,radius=0.75];
+  \node[font=\huge\bfseries,text=ink] at (0,0) {#1};
+  \end{tikzpicture}}
+
+\newcommand{\lvdone}{\begin{tikzpicture}
+  \draw[accent,line width=3pt] (0,0) circle (0.75);
+  \node[font=\huge,text=accent] at (0,0) {$\checkmark$};\end{tikzpicture}}
+
+% ---- exam-style checkpoint ----------------------------------------------------
+% \examq[seconds]{frame title}{question on slide}{question spoken}{answer on slide}{answer spoken}
+% Pages: 1 question (spoken + "You have N seconds."), N silent countdown pages, 1 answer.
+\newcommand{\examq}[6][5]{%
+\begin{frame}{#2}
+  \pgfmathtruncatemacro\lv@ans{#1+2}%
+  \say<1>{#4 You have #1 seconds.}%
+  \foreach \lv@k in {1,...,#1}{\pgfmathtruncatemacro\lv@o{\lv@k+1}\wait<\lv@o>{1}}%
+  \say<\lv@ans>{#6}%
+  {\color{accent}\scriptsize\bfseries\MakeUppercase{Checkpoint}}\par\smallskip
+  \begin{columns}[T]
+  \column{0.74\textwidth}
+    #3
+    \only<\lv@ans>{\par\medskip{\color{lvrule}\rule{\linewidth}{0.4pt}}\par\smallskip
+      {\color{accent}\bfseries Answer.}\ #5}
+  \column{0.22\textwidth}\centering
+    \only<1>{\tikz\path (0,0) circle (0.78);}% invisible ring keeps the layout still
+    \foreach \lv@k in {1,...,#1}{\pgfmathtruncatemacro\lv@o{\lv@k+1}\pgfmathtruncatemacro\lv@r{#1-\lv@k+1}%
+      \only<\lv@o>{\lvring{\lv@r}{#1}}}%
+    \only<-\numexpr\lv@ans-1\relax>{\par\smallskip{\color{mute}\scriptsize pause if you need longer}}%
+    \only<\lv@ans>{\lvdone}%
+  \end{columns}
+\end{frame}}
+\endinput

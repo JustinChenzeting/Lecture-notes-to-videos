@@ -52,5 +52,5 @@ No admin rights needed. Uninstall by deleting that folder.
 
 Tested on macOS (Apple silicon) and Ubuntu 24.04; Windows support is written but untested.
 
-License: MIT, see [LICENSE.txt](LICENSE.txt). The bundled tools it downloads (TinyTeX, Kokoro,
+License: MIT, see [LICENSE](LICENSE). The bundled tools it downloads (TinyTeX, Kokoro,
 ffmpeg, Python packages) keep their own licenses.
