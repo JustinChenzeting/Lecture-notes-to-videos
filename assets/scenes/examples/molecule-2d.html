@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- A skeletal formula drawn by SmilesDrawer (MIT) from SMILES, then drawn on stroke by stroke
+     with the kit. 2 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/lib/smiles-drawer.min.js"></script><script src="/kit/lv.js"></script>
+</head><body><script>
+const { C, el, text } = LV;
+const svg = LV.stage();
+const title = text(svg, 100, 120, "Caffeine", { "font-size": 60, serif: true });
+const sub = LV.math(svg, "\\mathrm{C_8H_{10}N_4O_2}", 100, 200, { size: 48, color: C.mute });
+const mol = el("svg", { id: "mol", x: 520, y: 160, width: 1100, height: 820 }, svg);
+const drawer = new SmilesDrawer.SvgDrawer({ width: 1100, height: 820, bondThickness: 2.4, fontSizeLarge: 13, fontSizeSmall: 9,
+  themes: { lecture: { C: C.ink, O: C.accent, N: C.blu, F: C.grn, CL: C.grn, BR: C.gold, I: C.gold, P: C.gold, S: C.gold,
+                       B: C.gold, SI: C.gold, H: C.ink, BACKGROUND: C.paper } } });
+SmilesDrawer.parse("CN1C=NC2=C1C(=O)N(C(=O)N2C)C", tree => {
+  drawer.draw(tree, mol, "lecture");
+  const strokes = [...mol.querySelectorAll("line, path, polyline")];
+  const labels = [...mol.querySelectorAll("text, g > text")];
+  LV.beat(b => { b.write(title, 0, 700); b.show(sub, 500, 500);              // 1: the bonds draw themselves
+    strokes.forEach((s, i) => b.draw(s, 300 + i * 120, 500)); b.show(labels, 300 + strokes.length * 120, 600); });
+  LV.beat(b => b.hold(3000));                                               // 2: hold
+  LV.done();
+}, err => { window.lvError = String(err); });
+</script></body></html>

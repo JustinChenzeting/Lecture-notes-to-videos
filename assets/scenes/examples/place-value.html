@@ -1,0 +1,56 @@
+<!doctype html>
+<!-- Khan-style build with LVB.placeValue: real objects first, the camera visits each group while the
+     narration counts, labels are hand-written in the group's colour, and the sum is assembled term
+     by term. 5 beats = 5 \say lines in the frame that holds \lvscene{place-value}{5}. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script>
+</head><body><script>
+const { C, el, text } = LV;
+const svg = LV.stage();
+const world = el("g", {}, svg), cam = LV.camera(world);        // everything the camera moves
+const pv = LVB.placeValue(world, { thousands: 2, hundreds: 2, tens: 5, ones: 9, x: 150, ground: 700 });
+const title = text(svg, 960, 120, "What number do the place value blocks show?", { "text-anchor": "middle", "font-size": 58, serif: true });
+
+// label above and value below each group, in the group's colour
+const label = (k, s) => text(world, pv.centre(k), pv.top(k) - 20, s, { "text-anchor": "middle", fill: pv.colour[k], "font-size": 46, "font-style": "italic", serif: true });
+const value = (k, s) => text(world, pv.centre(k), 800, s, { "text-anchor": "middle", fill: pv.colour[k], "font-size": 64, serif: true });
+const lab = { o: label("o", "ones"), t: label("t", "tens"), h: label("h", "hundreds"), th: label("th", "thousands") };
+const val = { o: value("o", "9"), t: value("t", "50"), h: value("h", "200"), th: value("th", "2000") };
+// the sum, one tspan per term in its group's colour, then the answer, ringed
+const sum = text(svg, 820, 960, "", { "text-anchor": "middle", "font-size": 70, serif: true });
+for (const [s, k] of [["2000", "th"], [" + ", ""], ["200", "h"], [" + ", ""], ["50", "t"], [" + ", ""], ["9", "o"], [" =", ""]])
+  el("tspan", { fill: pv.colour[k] || C.ink }, sum).textContent = s;
+const ans = text(svg, 0, 960, "", { "font-size": 70, "font-weight": "bold", serif: true });
+for (const [s, k] of [["2", "th"], [",", ""], ["2", "h"], ["5", "t"], ["9", "o"]]) el("tspan", { fill: pv.colour[k] || C.ink }, ans).textContent = s;
+const sb = sum.getBBox(); ans.setAttribute("x", sb.x + sb.width + 44);
+const ab = ans.getBBox();
+const ring = el("rect", { x: ab.x - 20, y: ab.y - 8, width: ab.width + 40, height: ab.height + 16, rx: 18, fill: "none", stroke: C.accent, "stroke-width": 5 }, svg);
+
+LV.beat(b => {                                                 // 1: the question, then the blocks
+  b.write(title, 0, 900);
+  ["th", "h", "t", "o"].forEach((k, i) => b.show(pv[k], 700 + i * 450, 500));
+});
+LV.beat(b => {                                                 // 2: zoom in on the ones and count them
+  b.look(cam, pv.centre("o"), 600, 2.0, 0, 1100);
+  b.count(pv.o.map(g => g.front), 1200, 330, C.accent);
+  b.write(lab.o, 4300, 500).write(val.o, 4900, 350);
+});
+LV.beat(b => {                                                 // 3: the tens
+  b.look(cam, pv.centre("t"), 560, 1.7, 0, 1000);
+  b.count(pv.t.map(g => g.front), 1100, 450, C.gold);
+  b.write(lab.t, 3500, 500).write(val.t, 4100, 450);
+});
+LV.beat(b => {                                                 // 4: the hundreds, then the thousands
+  b.look(cam, pv.centre("h"), 560, 1.45, 0, 900);
+  b.write(lab.h, 900, 650).write(val.h, 1600, 500);
+  b.look(cam, pv.centre("th"), 560, 1.35, 2400, 1100);
+  b.write(lab.th, 3500, 700).write(val.th, 4300, 550);
+});
+LV.beat(b => {                                                 // 5: pull back and add it all up
+  b.look(cam, 860, 520, 0.92, 0, 1200);
+  b.write(sum, 1300, 1600).write(ans, 3100, 500).draw(ring, 3700, 700);
+});
+LV.done();
+</script></body></html>

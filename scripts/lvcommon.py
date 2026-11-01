@@ -5,12 +5,12 @@ platform paths, the user config, the record written by `lv.py setup`, and LaTeX
 compilation that installs missing TeX packages on the fly when the TeX tree is writable.
 
 Locations (override with environment variables):
-  LECTURE_VIDEO_CACHE   downloads and envs: venv, TinyTeX, Kokoro model, TTS cache
+  LECTURE_VIDEO_CACHE   downloads and envs: venv, TinyTeX, Kokoro models, Chinese fonts, TTS cache
                         default ~/.cache/lecture-video  (%LOCALAPPDATA%\\lecture-video on Windows)
   LECTURE_VIDEO_CONFIG  personal settings: config.json, voices/<name>/, tex/ (branding)
                         default ~/.config/lecture-video (%APPDATA%\\lecture-video on Windows)
 """
-import json, os, re, shutil, subprocess, sys
+import hashlib, json, os, re, shutil, subprocess, sys
 from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent
@@ -41,12 +41,50 @@ def load_env() -> dict:
 
 
 def load_config() -> dict:
-    """Optional CONFIG/config.json: work_root, output_dir, voice, tts, rate, height."""
+    """Optional CONFIG/config.json: work_root, output_dir, voice, tts, rate, height, branding."""
     f = CONFIG / "config.json"
     try:
-        return json.loads(f.read_text()) if f.exists() else {}
+        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
     except ValueError as e:
         sys.exit(f"{f} is not valid JSON: {e}")
+
+
+def save_config(cfg: dict):
+    CONFIG.mkdir(parents=True, exist_ok=True)
+    (CONFIG / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+# ------------------------------------------------------------------- branding
+# A lecturevideo-brand.sty in the work folder (that lecture) or in CONFIG/tex (every lecture)
+# replaces the built-in theme. `lv.py brand` writes one with a record beside it, so it can tell
+# its own files from a hand-written theme, which it never overwrites.
+BRAND_STY, BRAND_JSON = "lecturevideo-brand.sty", "lecturevideo-brand.json"
+
+
+def brand_record(d: Path):
+    """The record of a brand file written by `lv.py brand` and unchanged since, else None."""
+    try:
+        rec = json.loads((d / BRAND_JSON).read_text(encoding="utf-8"))
+        sty = (d / BRAND_STY).read_bytes()
+    except (OSError, ValueError):
+        return None
+    return rec if rec.get("sha1") == hashlib.sha1(sty).hexdigest() else None
+
+
+def brand_status(work=None) -> str:
+    """What the next lecture is branded with; 'ask' while nothing has been decided."""
+    for d, scope in ((Path(work) if work else None, "this lecture only"), (CONFIG / "tex", "saved")):
+        if d and (d / BRAND_STY).exists():
+            rec = brand_record(d)
+            if rec is None:
+                return f"custom brand file {d / BRAND_STY}"
+            if rec.get("none"):
+                return f"none ({scope}; change with lv.py brand)"
+            what = " + ".join(x for x in (rec.get("name") or rec.get("name_zh"), rec.get("logo") and "logo") if x)
+            return f"{what} ({scope}; change with lv.py brand)"
+    if load_config().get("branding") == "none":
+        return "none (the user chose no branding; change with lv.py brand)"
+    return "ask"
 
 
 def ffmpeg() -> str:
@@ -70,12 +108,34 @@ def texinputs(extra=(), brand=True):
     return os.pathsep.join([".", *map(str, extra), *own, str(SKILL / "assets"), ""])
 
 
+# ------------------------------------------------------------------- language
+# A lecture is English unless its preamble says \usepackage[zh]{lecturevideo}. That one switch
+# selects XeLaTeX + ctex, the Chinese voice, subtitles and length estimate; English lectures
+# take exactly the code paths they always took.
+HAN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")  # Chinese characters
+FONTS = CACHE / "fonts"  # Noto Serif/Sans SC, fetched by lv.py for the first Chinese lecture
+ZH_FONTS = ["NotoSansSC-Regular.otf", "NotoSansSC-Bold.otf", "NotoSerifSC-Regular.otf", "NotoSerifSC-Bold.otf"]
+
+
+def tex_source(tex: Path) -> str:
+    """The .tex without % comments: a % after an even run of backslashes (none, or \\\\ for a
+    line break) starts one; \\% is a percent sign."""
+    return re.sub(r"(?<!\\)((?:\\\\)*)%[^\n]*", r"\1", tex.read_text(encoding="utf-8", errors="replace"))
+
+
+def lecture_lang(tex: Path) -> str:
+    """'zh' if the lecture loads lecturevideo with the zh option, else 'en'."""
+    m = re.search(r"\\usepackage\s*\[([^\]]*)\]\s*\{lecturevideo\}", tex_source(tex))
+    return "zh" if m and "zh" in (o.strip() for o in m.group(1).split(",")) else "en"
+
+
 # ------------------------------------------------------------------ TeX packages
 _MISSING = [
     (re.compile(r"[Ff]ile `([^']+)' not found"), ""),  # LaTeX, package and encoding errors
     (re.compile(r"! I can't find file `([^']+)'"), ""),
     (re.compile(r"pdfTeX error: \S+ \(file ([^)\s]+)\): cannot open"), ""),  # .enc, .pfb, .map
     (re.compile(r"! Font [^=]+=(\S+?)(?: at \S+)? not loadable: Metric \(TFM\) file"), ".tfm"),
+    (re.compile(r'The font "([^"/]+)" cannot be found'), ".otf"),  # XeLaTeX: e.g. ctex's Fandol fonts
 ]
 
 
@@ -140,18 +200,21 @@ def packages_for(files, texbin=""):
     return list(dict.fromkeys(pkgs))
 
 
-def compile_latex(tex: Path, extra_args=(), env=None, extra_inputs=(), brand=True, tries=12):
-    """latexmk -pdf; on 'File not found' errors, install the owning TeX packages and retry.
+def compile_latex(tex: Path, extra_args=(), env=None, extra_inputs=(), brand=True, tries=12, engine="pdf"):
+    """latexmk -pdf (engine="xelatex" for Chinese); on 'File not found' errors, install the
+    owning TeX packages and retry.
 
     Returns (ok, log_text)."""
     env = env if env is not None else load_env()
     texbin = env.get("texbin", "")
     e = tool_env(env)
     e["TEXINPUTS"] = texinputs(extra_inputs, brand)
+    if engine == "xelatex":  # fontspec finds the cached Noto fonts by file name; "" keeps TeX's own dirs
+        e["OPENTYPEFONTS"] = os.pathsep.join([str(FONTS), ""])
     args, installed = list(extra_args), []
     log = tex.parent / f"{tex.stem}.log"
     for _ in range(tries):
-        r = subprocess.run(["latexmk", "-pdf", *args, "-interaction=nonstopmode", "-halt-on-error", tex.name],
+        r = subprocess.run(["latexmk", f"-{engine}", *args, "-interaction=nonstopmode", "-halt-on-error", tex.name],
                            cwd=tex.parent, env=e, capture_output=True, text=True)
         text = log.read_text(errors="replace") if log.exists() else r.stdout + r.stderr
         if r.returncode == 0:

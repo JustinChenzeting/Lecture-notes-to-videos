@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- Quantum tunnelling with LVQ.wave1d (Crank-Nicolson, as in marl0ny's QM-Simulator-1D): a wave
+     packet whose energy (dashed) is below the barrier top partly passes through it. 3 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script><script src="/kit/quantum.js"></script>
+</head><body><script>
+const { C, text } = LV;
+const svg = LV.stage();
+const title = text(svg, 160, 110, "Tunnelling: a wave can get through a wall it cannot climb", { "font-size": 54, serif: true });
+const barrier = { x0: 0.05, width: 0.01, height: 4e4 }, k0 = 250;
+const sim = LVQ.wave1d({ N: 1024, V: LVQ.V.barrier(barrier.x0, barrier.width, barrier.height),
+                         packet: { x0: -0.25, k0, sigma: 0.04 } });
+const view = LVQ.plot1d(svg, sim, { x: 160, y: 260, width: 1600, height: 600, energy: k0 * k0 / 2, vMax: 4.4e4 });
+const key = text(svg, 160, 950, "", { "font-size": 40, fill: C.gold });
+key.textContent = "- - -  energy of the packet, below the top of the barrier";
+const trans = text(svg, 1180, 200, "", { "font-size": 46, fill: C.accent }), refl = text(svg, 1180, 250, "", { "font-size": 46, fill: C.mute });
+
+const SPEED = 0.0003, T_MAX = 0.0024;   // simulated time per second of video; stop before the box walls
+LV.beat(b => { b.write(title, 0, 900); b.show(key, 900, 500); b.hold(2500); });  // 1: the setup
+LV.beat(b => b.hold(6000));                                  // 2: it hits the barrier
+LV.beat(b => { b.show([trans, refl], 200, 500); b.hold(3500); });               // 3: how much got through
+LV.frame(t => {
+  view.draw(Math.min(T_MAX, Math.max(0, LV.local(1, t)) * SPEED));
+  const T = sim.prob(barrier.x0 + barrier.width, 1), R = sim.prob(-1, barrier.x0 - barrier.width);
+  trans.textContent = `transmitted ${(100 * T).toFixed(0)}%`; refl.textContent = `reflected ${(100 * R).toFixed(0)}%`;
+});
+LV.done();
+</script></body></html>

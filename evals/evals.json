@@ -27,6 +27,133 @@
       "files": [
         "inputs/rc.pdf"
       ]
+    },
+    {
+      "id": 4,
+      "name": "chinese-notes-lever-rule",
+      "prompt": "这是我材料科学课的中文讲义 inputs/lever_rule_zh.pdf，帮我做一个 3 分钟左右的中文讲解视频，要有中文字幕。",
+      "expected_output": "Language settled as Chinese before planning; lecture.tex loads \\usepackage[zh]{lecturevideo}. An MP4 of roughly 2.5-3.5 minutes narrated by zh-CN-YunxiNeural, with Chinese slides, maths read as in English (c prime, alpha, X L) and operators in Chinese (等于, 乘以), at least one attempt checkpoint with a spoken Chinese pause-and-work instruction, and Chinese .srt/.vtt subtitles of at most 16 characters a line and two lines.",
+      "files": [
+        "inputs/lever_rule_zh.pdf"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "english-notes-stay-english",
+      "prompt": "Turn inputs/damped_oscillator.md into a 2 minute video.",
+      "expected_output": "Language settled as English; references/chinese.md is not read and the zh option is not used; the English voice remains en-GB-SoniaNeural, with an explicit pause-and-work instruction before the new attempt checkpoint.",
+      "files": [
+        "inputs/damped_oscillator.md"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "first-use-asks-for-branding",
+      "prompt": "Can you turn my notes in inputs/ohms_law.md into a short narrated video? About 1 minute is enough, it's a quick revision clip.",
+      "expected_output": "With no branding saved, the agent asks once for a logo and a name. Given logo.png and 'Northbridge Institute of Technology', it runs lv.py brand: the title page shows the logo with the name beside it, every frame title shows the logo, the branding is saved for later lectures, and the report names it.",
+      "files": [
+        "inputs/ohms_law.md",
+        "inputs/logo.png"
+      ],
+      "expectations": [
+        "Asked the user about a logo / branding, once, before rendering",
+        "The branding is saved for later lectures (config brand file with the name and a logo)",
+        "The title page is headed by the logo with 'Northbridge Institute of Technology' beside it, above the lecture title",
+        "The logo is in the frame titles (on at least 90% of the slides after the title page)",
+        "A video was rendered, 0.5 to 2 minutes long",
+        "The report tells the user which branding the video has"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "saved-branding-chinese-no-question",
+      "prompt": "把 inputs/gougu_zh.md 做成一个 1 分钟左右的中文讲解视频。",
+      "expected_output": "Branding is already saved (logo, name, Chinese name), so the agent does not ask about it. The Chinese lecture's title page shows the logo with the Chinese name, frame titles show the logo, and the report names the branding used.",
+      "files": [
+        "inputs/gougu_zh.md"
+      ],
+      "expectations": [
+        "Did not ask about branding (it was already saved)",
+        "Made a Chinese lecture ([zh] option)",
+        "The title page is headed by the logo with the Chinese name 北桥理工学院 beside it, above the lecture title",
+        "The logo is in the frame titles (on at least 90% of the slides after the title page)",
+        "A video was rendered, 0.5 to 2 minutes long",
+        "The report tells the user which branding the video has"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "first-use-declines-branding",
+      "prompt": "Make a ~1 minute video from inputs/ohms_law.md please",
+      "expected_output": "The agent asks once about a logo and name; the user says no; it runs lv.py brand --none, so config.json records branding none and the next init prints 'branding: none'. The slides have no logo or name.",
+      "files": [
+        "inputs/ohms_law.md"
+      ],
+      "expectations": [
+        "Asked the user about a logo / branding, once, before rendering",
+        "The 'no branding' answer is saved (config.json branding: none), so it is not asked again",
+        "The slides carry no logo or name",
+        "A video was rendered, 0.5 to 2 minutes long",
+        "The report tells the user which branding the video has"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "en-basic-asks",
+      "prompt": "Can you turn my notes in inputs/ohms_law.md into a narrated video of about 1.5 minutes? It's for revision.",
+      "expected_output": "Asks Basic or Elaborated once (user: Basic); Basic teaching tools, no scenes; ~1.5 min video.",
+      "files": [
+        "inputs/ohms_law.md"
+      ],
+      "expectations": [
+        "Asked the user to choose the visual level (Basic or Elaborated), once, before rendering",
+        "Used at least two kinds of Basic teaching tools (\\lvwrite, \\lvzoom, \\lvcursor/\\lvhalo, \\lvslider, \\lvdraw)",
+        "No animated scenes (the user chose Basic)",
+        "A video was rendered, 1 to 2.5 minutes long",
+        "The report states the visual level"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "en-elaborated-stated",
+      "prompt": "Make an elaborated video, with animated scenes, of about 2 minutes from my projectile motion notes inputs/projectile.md.",
+      "expected_output": "Level named in the request, so no visual-level question; homework intake still applies; at least one animated scene rendered at 1080p with real motion; ~2 min.",
+      "files": [
+        "inputs/projectile.md"
+      ],
+      "expectations": [
+        "Did not ask about the visual level (the request named it)",
+        "At least one animated scene (\\lvscene with scenes/NAME.html) in the lecture",
+        "The scenes were rendered: at least 10 s of scene frames, and the video is 1080p",
+        "Also used at least one Basic teaching tool on the slides",
+        "A video was rendered, 1.5 to 3 minutes long",
+        "The report states the visual level and lists the scenes"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "zh-elaborated-asks",
+      "prompt": "把 inputs/gougu_zh.md 这份讲义做成一个两分钟左右的讲解视频。",
+      "expected_output": "Chinese lecture; asks the level once (user: elaborated); at least one scene rendered at 1080p.",
+      "files": [
+        "inputs/gougu_zh.md"
+      ],
+      "expectations": [
+        "Asked the user to choose the visual level (Basic or Elaborated), once, before rendering",
+        "Made a Chinese lecture ([zh] option)",
+        "At least one animated scene (\\lvscene with scenes/NAME.html) in the lecture",
+        "The scenes were rendered: at least 10 s of scene frames, and the video is 1080p",
+        "A video was rendered, 1.5 to 3 minutes long",
+        "The report states the visual level"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "real-homework-attempt-and-recall",
+      "prompt": "Make a basic study video from these notes and homework. Notes: for a binary two-phase alloy at fixed temperature, mass fractions sum to one and total B obeys mass balance. Homework, Set A Q4: at T3 the liquid contains 20 wt.% B and the solid 85 wt.% B. The solid mass fraction is 0.30. (a) Determine the overall B composition. (b) A student instead uses liquid fraction 0.30 and solid fraction 0.70. Determine the implied composition and explain whether it is the same alloy. Use this actual exercise for retrieval.",
+      "expected_output": "Uses the supplied Set A Q4 and both dependent subparts, with no duplicate homework or visual-level question. Preserves the task, gives an explicit manual pause before feedback, and correctly solves 39.5 wt.% B and 65.5 wt.% B. Includes a still consolidation moment, concrete spoken reasoning about mass balance, and separate recall questions/answers with source IDs and suggested next-day/week review. Reports video runtime separately from practice time.",
+      "files": []
     }
-  ]
+  ],
+  "interaction_setup": "Unless the prompt already supplies homework or explicitly declines it, the agent asks for the relevant exercises alongside any other unanswered intake choices. For these legacy fixtures, the evaluator replies that no homework is available, permitting clearly labelled author-written questions. Do not treat silence as that reply."
 }

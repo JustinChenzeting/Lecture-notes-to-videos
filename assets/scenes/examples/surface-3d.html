@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- three.js in the ThreeUI manner (soft glowing particles, slow camera drift), on the lecture's
+     paper palette: a surface, flow along its level curves, then a slicing plane. 3 beats, all
+     motion drawn in LV.frame from the time t. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script><script src="/kit/lv.js"></script>
+<script type="importmap">{"imports":{"three":"/lib/three.module.js"}}</script>
+</head><body><script type="module">
+import * as THREE from "three";
+const { C } = LV;
+const svg = LV.stage();                                  // captions sit on an SVG layer above the canvas
+svg.style.zIndex = 2;
+const title = LV.math(svg, "z = x^2 + y^2", 90, 120, { size: 64 });
+const slice = LV.math(svg, "\\text{slice at } y = 0:\\;\\; z = x^2", 90, 205, { size: 48, color: C.accent });
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(LV.W, LV.H); renderer.setPixelRatio(1); renderer.setClearColor(C.paper);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(38, LV.W / LV.H, 0.1, 100);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d2c0, 2.2));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(4, 8, 6); scene.add(sun);
+
+const f = (x, y) => (x * x + y * y) / 2, R = 1.8;      // maths z is three's y
+const geo = new THREE.PlaneGeometry(2 * R, 2 * R, 80, 80).rotateX(-Math.PI / 2);
+const pos = geo.attributes.position;
+for (let i = 0; i < pos.count; i++) pos.setY(i, f(pos.getX(i), pos.getZ(i)));
+geo.computeVertexNormals();
+const surf = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x8fb8cf, roughness: 0.55, transparent: true,
+  opacity: 0.9, side: THREE.DoubleSide }));
+scene.add(surf);
+scene.add(new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.PlaneGeometry(2 * R, 2 * R, 12, 12).rotateX(-Math.PI / 2)),
+  new THREE.LineBasicMaterial({ color: 0xcccccc })));
+
+// glowing particles that flow along level curves (a soft radial sprite, as in ThreeUI)
+const N = 700, seeds = [...Array(N).keys()].map(i => ({ r: 0.3 + 1.4 * Math.sqrt((i * 0.618) % 1), a: i * 2.399 }));
+const pp = new Float32Array(N * 3), pg = new THREE.BufferGeometry();
+pg.setAttribute("position", new THREE.BufferAttribute(pp, 3));
+const sprite = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
+  const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(0.4, "rgba(255,255,255,.55)"); r.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+const pts = new THREE.Points(pg, new THREE.PointsMaterial({ size: 0.2, map: sprite, color: 0xD47500, transparent: true, depthWrite: false, depthTest: false }));
+scene.add(pts);
+
+const plane = new THREE.Mesh(new THREE.PlaneGeometry(2 * R + 0.6, 3.6), new THREE.MeshBasicMaterial({ color: 0xB31B1B,
+  transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+plane.position.set(0, 1.7, 0); scene.add(plane);
+const cps = [...Array(101).keys()].map(i => { const x = -R + 2 * R * i / 100; return new THREE.Vector3(x, f(x, 0) + 0.01, 0); });
+const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cps), 200, 0.035, 10), new THREE.MeshBasicMaterial({ color: 0xB31B1B, transparent: true, depthTest: false }));
+tube.renderOrder = 2; scene.add(tube);  // transparent pass, drawn last: in front of the see-through surface
+
+LV.beat(b => { b.show(title, 0, 600); b.hold(4000); });   // 1: the surface turns slowly
+LV.beat(b => b.hold(4000));                               // 2: flow along level curves
+LV.beat(b => { b.show(slice, 1500, 600); b.hold(4500); });  // 3: slice it: a parabola
+
+LV.frame((t) => {
+  const { progress: P, smooth } = LV;
+  const ang = -0.9 + 0.2 * t, tilt = 0.42 - 0.3 * P(2, t, 3000, smooth), dist = 10.5 - 1.2 * P(2, t, 3000, smooth);
+  camera.position.set(dist * Math.cos(ang) * Math.cos(tilt), 1.2 + dist * Math.sin(tilt), dist * Math.sin(ang) * Math.cos(tilt));
+  camera.lookAt(0.9, 1.25, 0);
+  for (let i = 0; i < N; i++) { const s = seeds[i], a = s.a + 0.9 * t / s.r, x = s.r * Math.cos(a), y = s.r * Math.sin(a);
+    pp.set([x, f(x, y) + 0.02, y], i * 3); }
+  pg.attributes.position.needsUpdate = true;
+  pts.material.opacity = P(1, t, 1500, smooth) * (1 - 0.6 * P(2, t, 1500, smooth));
+  const cut = P(2, t, 1500, smooth);
+  plane.material.opacity = 0.16 * cut; plane.scale.set(1, cut + 0.001, 1);
+  const trace = Math.max(0, Math.min(1, (LV.local(2, t) - 1.5) / 2.5));  // then the parabola is traced
+  tube.geometry.setDrawRange(0, Math.floor(trace * tube.geometry.index.count / 6) * 6);
+  renderer.render(scene, camera);
+});
+LV.done();
+</script></body></html>

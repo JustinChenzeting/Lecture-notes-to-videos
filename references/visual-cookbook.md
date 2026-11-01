@@ -2,6 +2,8 @@
 
 Short, parametric TikZ/pgfplots patterns. Each is a few lines and turns into motion with
 `\lvanim{first}{frames}{...}`, where `\lvt` runs 0→1. Read only the section you need.
+Hand-written labels, strokes drawn on, pointers, sliders and camera zooms:
+[visual-style.md](visual-style.md).
 
 Contents: 1 Moving state point · 2 Live readout · 3 Progressive curve · 4 Sweeping tie line ·
 5 Lattice / dislocation · 6 Path trace (Burgers circuit) · 7 Vector & force arrows ·

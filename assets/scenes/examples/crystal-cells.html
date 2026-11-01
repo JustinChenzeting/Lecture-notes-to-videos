@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- Crystal structures with LVM.crystal3d (matterviz parsers, colours and lattice planes; three.js):
+     an FCC copper cell turning, its close-packed (111) plane, then rock salt read from a POSCAR
+     file with its Na-Cl bonds. 3 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script><script src="/kit/materials.js"></script>
+<script type="importmap">{"imports":{"three":"/lib/three.module.js"}}</script>
+</head><body><script type="module">
+import * as THREE from "three";
+const { C, text } = LV;
+await LVM.ready;
+const { renderer, scene, camera } = LVB.three(THREE, { fov: 30 });
+const svg = LV.stage();
+const t1 = text(svg, 100, 120, "Face-centred cubic: copper", { "font-size": 56, serif: true });
+const t2 = LV.math(svg, "(111):\\ \\text{the close-packed plane}", 100, 200, { size: 46, color: C.accent });
+const t3 = text(svg, 100, 120, "Rock salt, read from a POSCAR file", { "font-size": 56, serif: true });
+const fcc = LVM.crystal3d(THREE, LVM.cell("fcc", { a: 3.61, elements: ["Cu"] }), { scale: 0.32, scheme: "Jmol", planes: [{ hkl: [1, 1, 1] }] });
+const nacl = LVM.crystal3d(THREE, await LVM.structureFile("/kit/data/structures/NaCl-cubic.poscar"), { scale: 0.3, bonds: true });
+scene.add(fcc.group, nacl.group);
+const plane = fcc.planes[0];
+LV.beat(b => { b.write(t1, 0, 900); b.hold(4000); });                         // 1: the FCC cell
+LV.beat(b => { b.show(t2, 300, 600); b.hold(4500); });                        // 2: the (111) plane
+LV.beat(b => { b.hide([t1, t2], 0, 300); b.show(t3, 400, 600); b.hold(5000); });  // 3: rock salt
+LV.frame(t => {
+  const third = LV.local(2, t) > 0.3;
+  fcc.group.visible = !third; nacl.group.visible = third;
+  plane.visible = LV.local(1, t) > 0.2 && !third;
+  plane.children.forEach(m => (m.material.opacity = 0.5 * LV.progress(1, t, 1200, LV.smooth)));
+  const s = third ? nacl.size : fcc.size;
+  LVB.orbit(camera, { angle: 0.7 + 0.22 * t, tilt: 0.42, dist: s * 3.0, target: [0, 0, 0] });
+  renderer.render(scene, camera);
+});
+LV.done();
+</script></body></html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Brilliant-style "predict, then watch" with LVB.axes, LVB.slider and LVB.ghosts: a parameter
+     slider drives the curve, and faint copies stay behind so the viewer can compare. 3 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script>
+</head><body><script>
+const { C, el, text } = LV;
+const svg = LV.stage();
+const ask = text(svg, 960, 110, "", { "text-anchor": "middle", "font-size": 50 });
+el("tspan", { fill: C.accent, "font-style": "italic" }, ask).textContent = "Predict: ";
+el("tspan", {}, ask).textContent = "what happens to the curve as a shrinks to 0, then turns negative?";
+
+const ax = LVB.axes(svg, { x: 240, y: 250, width: 720, height: 780, xRange: [-3.6, 3.6, 1], yRange: [-3.9, 3.9, 1], numbers: false });
+LV.math(svg, "y = {\\color{#B31B1B}a}\\,x^2", 1250, 400, { size: 76 });
+const s = LVB.slider(svg, { x: 1250, y: 640, min: -2, max: 2, value: 1, name: "a" });
+const ghosts = LVB.ghosts(ax, (x, a) => a * x * x);
+const curve = ax.plot(x => s.v * x * x);
+LV.frame(() => ax.plot(x => s.v * x * x, {}, curve));
+
+const sweep = (b, v, ms, dur) => { b.add(s, { v, duration: dur, ease: "inOutSine" }, ms); ghosts.mark(b, v, ms + dur); };
+LV.beat(b => { b.show(ask, 0, 600); b.hold(2500); });                      // 1: the question
+LV.beat(b => { sweep(b, 2, 300, 1500); sweep(b, 0.5, 2100, 1500); });      // 2: steeper, then wider
+LV.beat(b => { sweep(b, -0.5, 200, 1700); sweep(b, -2, 2200, 1500);        // 3: through zero, flipped
+               b.add(s, { v: 1, duration: 1700, ease: "inOutSine" }, 4100); });
+LV.done();
+</script></body></html>

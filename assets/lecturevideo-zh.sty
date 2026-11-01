@@ -1,0 +1,28 @@
+% lecturevideo-zh.sty -- Chinese lectures: loaded by \usepackage[zh]{lecturevideo}, never on its own.
+% XeLaTeX + ctex. Chinese text uses Noto Serif SC (titles, \rmfamily) and Noto Sans SC (body,
+% \sffamily) from the skill's font cache (lv.py downloads them and points XeLaTeX at them);
+% without them, ctex's default Chinese fonts for this system. Latin text and maths keep the theme's.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{lecturevideo-zh}[2026/10/20]
+\RequirePackage{iftex}
+\ifXeTeX\else
+  \PackageError{lecturevideo}{Chinese lectures compile with XeLaTeX}
+    {Build with lv.py check / render, which switch the engine for \string\usepackage[zh]{lecturevideo}.}
+\fi
+\RequirePackage{fontspec}
+\newif\iflv@noto  % all four Noto files, or none: a partial download must not break the build
+\IfFontExistsTF{NotoSansSC-Regular.otf}{\IfFontExistsTF{NotoSansSC-Bold.otf}{%
+  \IfFontExistsTF{NotoSerifSC-Regular.otf}{\IfFontExistsTF{NotoSerifSC-Bold.otf}{\lv@nototrue}{}}{}}{}}{}
+\iflv@noto\PassOptionsToPackage{fontset=none}{ctex}\fi
+\RequirePackage[heading=false,scheme=plain]{ctex}
+\iflv@noto
+  % no Chinese italics exist: italic requests (e.g. the subtitle) stay upright
+  \setCJKmainfont{NotoSerifSC-Regular.otf}[BoldFont=NotoSerifSC-Bold.otf,
+    ItalicFont=NotoSerifSC-Regular.otf,BoldItalicFont=NotoSerifSC-Bold.otf]
+  \setCJKsansfont{NotoSansSC-Regular.otf}[BoldFont=NotoSansSC-Bold.otf,
+    ItalicFont=NotoSansSC-Regular.otf,BoldItalicFont=NotoSansSC-Bold.otf]
+  \setCJKmonofont{NotoSansSC-Regular.otf}[BoldFont=NotoSansSC-Bold.otf]
+\fi
+\def\lv@cpname{随堂测验}
+\def\lv@anslabel{{\color{accent}\bfseries 答案：}}
+\endinput

@@ -1,27 +1,44 @@
 % lecturevideo.sty -- narration, animation and checkpoint layer for narrated lecture videos.
 % Load with \usepackage{lecturevideo} in a beamer[aspectratio=169] document.
-% Provides: \say<ov>{text}  \wait<ov>{sec}  \lvanim{first}{n}{code}  \examq[...]{...}  \lvlogo{file}
+% Provides: \say<ov>{text}  \wait<ov>{sec}  \lvanim{first}{n}{code}  \examq[...]{...}  \attemptq[...]{...}  \lvlogo{file}  \lvname{text}
+%           \lvwrite \lvdraw \lvcursor \lvhalo \lvslider \lvzoom<ov> (teaching visuals)  \lvscene{name}{beats}
 % render_lecture.py reads the page-accurate narration map <job>.narr that this file writes.
 % Look: the built-in theme (beamerthemelecturevideo.sty). A lecturevideo-brand.sty in the work
 % folder or in the config folder's tex/ replaces it (references/customization.md).
+% Language: English by default. \usepackage[zh]{lecturevideo} makes a Chinese lecture
+% (lecturevideo-zh.sty: XeLaTeX + ctex, Chinese checkpoint labels; lv.py switches the engine).
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{lecturevideo}[2026/10/18]
+\ProvidesPackage{lecturevideo}[2026/10/21]
 \RequirePackage{xcolor}
+\newif\iflv@zh
+\DeclareOption{zh}{\lv@zhtrue}
+\DeclareOption{en}{}
+\ProcessOptions\relax
 
 % ---- palette: one accent for emphasis, results and state markers (a brand file may redefine) ----
 \definecolor{ink}{HTML}{222222}\definecolor{accent}{HTML}{B31B1B}\definecolor{mute}{HTML}{595959}
 \definecolor{blu}{HTML}{006699}\definecolor{grn}{HTML}{4B7B2B}\definecolor{gold}{HTML}{D47500}
 \definecolor{paper}{HTML}{FBF9F1}\definecolor{lvlight}{HTML}{F7F7F7}\definecolor{lvrule}{HTML}{CCCCCC}
 
-% ---- optional logo: \lvlogo{file} puts it at the upper left of every frame title and on the
-% title page (unless the theme already sets \titlegraphic). Empty by default.
+% ---- optional logo and name: \lvlogo{file} puts the logo at the left of every frame title; the
+% title page shows it with \lvname{...} beside it, unless the theme already sets \titlegraphic.
+% Both empty by default; `lv.py brand` writes a brand file that sets them.
 \def\lv@logo{}
 \newcommand{\lvlogo}[1]{\gdef\lv@logo{#1}}
+\def\lv@name{}
+\newcommand{\lvname}[1]{\gdef\lv@name{#1}}
+\newcommand{\lvnamefont}{\rmfamily}
 
 \IfFileExists{lecturevideo-brand.sty}{\RequirePackage{lecturevideo-brand}}{\usetheme{lecturevideo}}
 \RequirePackage{tikz,pgfplots,booktabs,amssymb}
 \pgfplotsset{compat=1.18}
 \usetikzlibrary{arrows.meta,positioning,calc,decorations.markings}
+\RequirePackage{graphicx}
+
+% ---- checkpoint labels (lecturevideo-zh.sty redefines them) ----
+\def\lv@cpname{Checkpoint}
+\def\lv@anslabel{{\color{accent}\bfseries Answer.}\ }
+\iflv@zh\RequirePackage{lecturevideo-zh}\fi
 
 % ---- figure defaults: no pgfplots cycle markers, readable labels -----------
 \pgfplotsset{pd/.style={width=9cm,height=6.2cm,axis lines=left,tick label style={font=\scriptsize},
@@ -34,10 +51,20 @@
 \newcommand{\dg}{$^\circ$C}
 
 % ---- logo hooks ----
+% A wide logo is capped in width, so it never crowds the frame title or the name.
 \addtobeamertemplate{frametitle}{\ifx\lv@logo\@empty\else\let\lv@ft\insertframetitle
-  \def\insertframetitle{\raisebox{-0.28em}{\includegraphics[height=1.25em]{\lv@logo}}\hspace{0.55em}\lv@ft}\fi}{}
-\AtBeginDocument{\ifx\lv@logo\@empty\else\ifx\inserttitlegraphic\@empty
-  \titlegraphic{\includegraphics[height=0.46in]{\lv@logo}}\fi\fi}
+  \def\insertframetitle{\raisebox{-0.28em}{\includegraphics[height=1.25em,width=4em,keepaspectratio]{\lv@logo}}%
+    \hspace{0.55em}\lv@ft}\fi}{}
+\def\lv@vc#1{$\vcenter{\hbox{#1}}$}
+\newsavebox\lv@logobox
+\def\lv@mark{% logo, then the name in the width left beside it (a long name wraps)
+  \sbox\lv@logobox{\ifx\lv@logo\@empty\else\includegraphics[height=0.46in,width=1.8in,keepaspectratio]{\lv@logo}%
+    \ifx\lv@name\@empty\else\hspace{0.9em}\fi\fi}%
+  \lv@vc{\usebox\lv@logobox}%
+  \ifx\lv@name\@empty\else\lv@vc{\parbox{\dimexpr\textwidth-\wd\lv@logobox-1em\relax}{\raggedright
+    \lvnamefont\fontsize{20}{24}\selectfont\lv@name}}\fi}
+\AtBeginDocument{\ifx\inserttitlegraphic\@empty
+  \ifx\lv@logo\@empty\ifx\lv@name\@empty\else\titlegraphic{\lv@mark}\fi\else\titlegraphic{\lv@mark}\fi\fi}
 % Voice credit on the title page, set by render_lecture.py for cloned voices (\lvvoicecredit).
 \providecommand\lvvoicecredit{}
 \addtobeamertemplate{title page}{}{\ifx\lvvoicecredit\@empty\else
@@ -73,6 +100,66 @@
     \pgfmathsetmacro\lv@t{\lv@k/max(\lv@last,1)}%
     \only<\lv@slide>{\xdef\lvt{\lv@t}#3}}}
 
+% ---- metadata for the renderer (camera moves, scenes): page|kind|frame|0|spec|value ----
+% Unlike \say/\wait it does not count as narration and does not change the ordinals.
+\def\lv@meta#1#2#3{\edef\lv@w{\noexpand\write\lv@narr{\noexpand\thepage|#1|\insertframenumber|0|#2|#3}}\only#2{\lv@w}}
+
+% ---- teaching visuals (references/visual-style.md) ---------------------------
+% \lvwrite{first}{frames}{content}: content appears left to right, as if hand-written, over
+% `frames` overlay pages from `first` on, then stays. Narrate those pages with one \say<first-last>.
+% Works in text and inside a TikZ node.
+\newsavebox\lv@wbox
+\def\lv@clip#1{\begin{pgfpicture}\pgfsetbaseline{0pt}%
+  \pgfpathrectangle{\pgfpoint{0pt}{-\dp\lv@wbox}}{\pgfpoint{#1\wd\lv@wbox}{\dimexpr\ht\lv@wbox+\dp\lv@wbox\relax}}%
+  \pgfusepath{clip}%
+  \pgftext[base,left]{\usebox\lv@wbox}\end{pgfpicture}}
+\newcommand{\lvwrite}[3]{\begingroup\sbox\lv@wbox{#3}\leavevmode
+  \pgfmathtruncatemacro\lv@wl{#1+#2-1}% last page of the writing; \alt adds no page after it
+  \alt<-\lv@wl>{\foreach \lv@k in {1,...,#2}{\pgfmathtruncatemacro\lv@ws{#1+\lv@k-1}\pgfmathsetmacro\lv@f{\lv@k/(#2)}%
+    \only<\lv@ws>{\rlap{\lv@clip{\lv@f}}}}}{\rlap{\usebox\lv@wbox}}%
+  \phantom{\usebox\lv@wbox}\endgroup}
+% \lvdraw[style]{fraction}{path}: the first `fraction` (0..1) of a TikZ path, for a stroke that is
+% drawn on inside \lvanim (\lvdraw[accent,very thick,->]{\lvt}{(0,0) .. controls (1,2) .. (3,0)}).
+% Arrow tips appear once it is complete. In a tikzpicture, not inside a pgfplots axis.
+\newcommand{\lvdraw}[3][]{\pgfmathsetmacro\lv@f{min(1,max(0,#2))}%
+  \path[decorate,decoration={markings,mark=at position 0 with {\xdef\lv@len{\pgfdecoratedpathlength}}}] #3;%
+  \ifdim\lv@f pt<0.999pt\pgfmathsetlengthmacro\lv@on{max(0.01pt,\lv@f*\lv@len)}%
+    \pgfmathsetlengthmacro\lv@off{\lv@len+10pt}\draw[#1,arrows=-,dash pattern=on \lv@on\space off \lv@off] #3;%
+  \else\draw[#1] #3;\fi}
+% \lvcursor{(x,y)}: a pointer (arrow cursor) with its tip at (x,y), the same size in any picture.
+% Moved with \lvanim and calc: \lvcursor{($(a)!\lvt!(b)$)}. \lvhalo{(x,y)} rings a spot.
+\newcommand{\lvcursor}[1]{\begin{scope}[shift={#1},x=1pt,y=1pt]
+  \fill[black,opacity=0.18] (1.2,-1.2) -- (1.2,-18.2) -- (5.7,-14.2) -- (8.8,-21.2) -- (11.7,-19.7) -- (8.6,-13.2) -- (14.5,-13.2) -- cycle;
+  \filldraw[fill=white,draw=ink,line width=0.9pt,line join=round]
+    (0,0) -- (0,-17) -- (4.5,-13) -- (7.6,-20) -- (10.5,-18.5) -- (7.4,-12) -- (13.3,-12) -- cycle;\end{scope}}
+\newcommand{\lvhalo}[1]{\fill[accent,opacity=0.12] #1 circle (11pt);\draw[accent,line width=1.6pt] #1 circle (11pt);}
+% \lvslider{(at)}{min}{max}{value}{name}: a Brilliant-style parameter slider, 4 units long, with a
+% readout "name = value". Sweep it in \lvanim: \lvslider{(0,-1)}{-2}{2}{2-3*\lvt}{a}.
+\newcommand{\lvslider}[5]{\begin{scope}[shift={#1}]
+  \pgfmathsetmacro\lv@sv{4*(max(#2,min(#3,#4))-(#2))/((#3)-(#2))}\pgfmathsetmacro\lv@sval{#4}%
+  \pgfmathsetmacro\lv@sz{4*(max(#2,min(#3,0))-(#2))/((#3)-(#2))}%
+  \draw[lvrule,line width=5pt,line cap=round] (0,0) -- (4,0);
+  \draw[accent,line width=5pt,line cap=round] (\lv@sz,0) -- (\lv@sv,0);
+  \node[circle,fill=white,draw=accent,line width=1.8pt,minimum size=11pt,inner sep=0pt] at (\lv@sv,0) {};
+  \node[font=\scriptsize,text=mute,below=6pt] at (0,0) {$#2$};\node[font=\scriptsize,text=mute,below=6pt] at (4,0) {$#3$};
+  \node[font=\small,text=ink,anchor=west] at (4.3,0) {$#5 = \pgfmathprintnumber[fixed,fixed zerofill,precision=2]{\lv@sval}$};
+  \end{scope}}
+% \lvzoom<overlays>{x}{y}{zoom}: on those pages the camera moves smoothly to show the point (x, y)
+% (fractions of the slide: 0,0 top left, 1,1 bottom right) magnified `zoom` times (1-3); pages
+% without it show the whole slide, and the renderer pulls back smoothly.
+\newcommand<>{\lvzoom}[3]{\lv@meta{cam}{#4}{#1,#2,#3}}
+
+% ---- elaborated scenes (references/scenes.md) --------------------------------
+% \lvscene{name}{beats} in a [plain] frame: beat k of scenes/<name>.html plays on overlay k and is
+% narrated by \say<k>. The slide (and the PDF) shows the still `lv.py scene` makes of each beat.
+\def\lv@still#1#2{\begin{tikzpicture}[remember picture,overlay]
+  \IfFileExists{scenes/#1-#2.png}
+    {\node[inner sep=0pt] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{scenes/#1-#2.png}};}
+    {\fill[lvlight] (current page.south west) rectangle (current page.north east);
+     \node[text=mute,align=center] at (current page.center) {scene \texttt{#1}, beat #2\\(made by lv.py check)};}
+  \end{tikzpicture}}
+\newcommand{\lvscene}[2]{\foreach \lv@k in {1,...,#2}{\only<\lv@k>{\lv@still{#1}{\lv@k}}\lv@meta{scene}{<\lv@k>}{#1}}}
+
 % ---- countdown ring ---------------------------------------------------------
 \newcommand{\lvring}[2]{% remaining, total
   \begin{tikzpicture}
@@ -89,24 +176,50 @@
 % ---- exam-style checkpoint ----------------------------------------------------
 % \examq[seconds]{frame title}{question on slide}{question spoken}{answer on slide}{answer spoken}
 % Pages: 1 question (spoken + "You have N seconds."), N silent countdown pages, 1 answer.
+% Chinese: the question alone is spoken and the slide has no pause hint.
 \newcommand{\examq}[6][5]{%
 \begin{frame}{#2}
   \pgfmathtruncatemacro\lv@ans{#1+2}%
-  \say<1>{#4 You have #1 seconds.}%
+  \iflv@zh\say<1>{#4}\else\say<1>{#4 You have #1 seconds.}\fi%
   \foreach \lv@k in {1,...,#1}{\pgfmathtruncatemacro\lv@o{\lv@k+1}\wait<\lv@o>{1}}%
   \say<\lv@ans>{#6}%
-  {\color{accent}\scriptsize\bfseries\MakeUppercase{Checkpoint}}\par\smallskip
+  {\color{accent}\scriptsize\bfseries\MakeUppercase{\lv@cpname}}\par\smallskip
   \begin{columns}[T]
   \column{0.74\textwidth}
     #3
     \only<\lv@ans>{\par\medskip{\color{lvrule}\rule{\linewidth}{0.4pt}}\par\smallskip
-      {\color{accent}\bfseries Answer.}\ #5}
+      \lv@anslabel#5}
   \column{0.22\textwidth}\centering
     \only<1>{\tikz\path (0,0) circle (0.78);}% invisible ring keeps the layout still
     \foreach \lv@k in {1,...,#1}{\pgfmathtruncatemacro\lv@o{\lv@k+1}\pgfmathtruncatemacro\lv@r{#1-\lv@k+1}%
       \only<\lv@o>{\lvring{\lv@r}{#1}}}%
-    \only<-\numexpr\lv@ans-1\relax>{\par\smallskip{\color{mute}\scriptsize pause if you need longer}}%
+    \iflv@zh\else\only<-\numexpr\lv@ans-1\relax>{\par\smallskip{\color{mute}\scriptsize pause if you need longer}}\fi%
     \only<\lv@ans>{\lvdone}%
   \end{columns}
 \end{frame}}
+
+% ---- homework attempt: explicit manual pause, still buffer, separate solution ----
+% Same arguments as examq. Optional seconds are time to pause the player, not a solve limit.
+% Use ordinary frames for long questions or multi-frame solutions. Legacy examq is unchanged.
+\newcommand{\attemptq}[6][15]{%
+  \begin{frame}{#2}
+  \iflv@zh
+    \say<1>{#4 请现在暂停视频。先写出解答，或写出你的思路，并标出卡住的地方。尝试后再继续观看解答。}%
+  \else
+    \say<1>{#4 Pause the video now. Write a solution or a reasoned start, and mark where you get stuck. Resume after your attempt to see the worked solution.}%
+  \fi
+  \wait<2>{#1}%
+  #3\par\medskip
+  \iflv@zh
+      {\color{accent}\small\bfseries 请暂停并动笔尝试，完成尝试后再继续。}
+    \else
+      {\color{accent}\small\bfseries Pause and work on paper. Resume after your attempt.}
+    \fi
+  \end{frame}
+  \begin{frame}{#2}
+  \say{#6}%
+  \lv@anslabel\par\medskip
+  #5
+  \end{frame}}
+
 \endinput

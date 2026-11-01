@@ -1,0 +1,3 @@
+# Installed by `lv.py setup --zh` into the same venv: the offline Chinese voice's text front end.
+# Binary wheels or pure Python; English words inside Chinese narration use the bundled espeak-ng.
+misaki-fork[zh]>=0.9.6   # Chinese text -> Kokoro v1.1-zh phonemes (jieba, pypinyin, cn2an)

@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- Projectile with LVB.projectile (exact kinematics): live velocity components, a strobe of faint
+     copies, then the strobe's horizontal arrows show vx never changes. 3 beats. For collisions
+     between several bodies use matter.js (scenes.md §5). -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script>
+</head><body><script>
+const { C, el, text } = LV;
+const svg = LV.stage();
+el("rect", { x: 0, y: 980, width: 1920, height: 100, fill: "#E9E4D4" }, svg);
+const title = text(svg, 90, 110, "Projectile: the horizontal speed never changes", { "font-size": 54, serif: true });
+const vx = text(svg, 1400, 230, "", { "font-size": 46, fill: C.blu }), vy = text(svg, 1400, 300, "", { "font-size": 46, fill: C.accent });
+const p = LVB.projectile(svg, { v0: 16, angle: 55, e: 0.4, origin: [150, 955], scale: 45, strobe: 0.25 });
+
+LV.beat(b => { b.write(title, 0, 900); b.hold(1500); });  // 1: the setup
+LV.beat(b => b.hold(6000));                               // 2: launch: watch both arrows
+LV.beat(b => b.hold(3500));                               // 3: the strobe shows vx never changes
+LV.frame(t => {
+  const s = Math.max(0, LV.local(1, t));                  // seconds since beat 2 began
+  const st = p.draw(s, { strobeArrows: LV.local(2, t) > 0 });
+  vx.textContent = s > 0 ? `vx = ${st.vx.toFixed(1)} m/s` : "";
+  vy.textContent = s > 0 ? `vy = ${st.vy.toFixed(1).replace("-", "−")} m/s` : "";
+});
+LV.done();
+</script></body></html>

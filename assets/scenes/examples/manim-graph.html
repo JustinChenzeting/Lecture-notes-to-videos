@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- manim-web (the Manim API in the browser) through LV.manim: axes are created, a graph is drawn
+     with its equation written beside it, then it transforms into a wider parabola. Call beat() at
+     the end of every beat; the kit stretches each beat to its sentence. 3 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script><script src="/kit/lv.js"></script>
+</head><body><script>
+const { C } = LV;
+LV.manim(async (scene, M, beat) => {
+  const ax = new M.Axes({ xRange: [-3, 3, 1], yRange: [0, 9, 3], xLength: 8, yLength: 5, color: C.ink });
+  ax.shift([-1.5, -0.3, 0]);
+  await scene.play(new M.Create(ax, { runTime: 1.2 }));
+  await beat();                                                    // 1: the axes
+  const g = ax.plot(x => x * x, { color: C.accent, strokeWidth: 6 });
+  const eq = new M.MathTex({ latex: "y = x^2", color: C.ink, fontSize: 64 });
+  eq.moveTo([4.5, 2.5, 0]);
+  await scene.play(new M.Create(g), new M.Write(eq));
+  await beat();                                                    // 2: the parabola
+  const g2 = ax.plot(x => 0.5 * x * x, { color: C.blu, strokeWidth: 6 });
+  const eq2 = new M.MathTex({ latex: "y = \\tfrac{1}{2}x^2", color: C.blu, fontSize: 64 });
+  eq2.moveTo([4.5, 1.2, 0]);
+  await scene.play(new M.Transform(g.copy(), g2), new M.Write(eq2));
+  await beat();                                                    // 3: a wider one
+});
+</script></body></html>

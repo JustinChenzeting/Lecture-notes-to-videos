@@ -20,6 +20,9 @@ from pathlib import Path
 import pypdfium2 as pdfium
 from PIL import Image, ImageOps
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lvcommon import HAN  # noqa: E402
+
 try:  # iPhone photos
     from pillow_heif import register_heif_opener
     register_heif_opener()
@@ -84,9 +87,10 @@ def main():
             for p in range(1, len(doc) + 1):
                 page = doc[p - 1]
                 t = page.get_textpage().get_text_range()
-                words = len(re.findall(r"[A-Za-z]{2,}", t))
+                # a Chinese word is ~2 characters; Chinese has no spaces to count by
+                words = len(re.findall(r"[A-Za-z]{2,}", t)) + len(HAN.findall(t)) // 2
                 # figures carry little text even in typed notes: render those pages too
-                has_figure = bool(re.search(r"\b(Fig(ure)?\.?\s*\d+|Diagram|Table)\b", t))
+                has_figure = bool(re.search(r"\b(Fig(ure)?\.?\s*\d+|Diagram|Table)\b|[图表]\s*\d", t))
                 if words >= a.min_words:
                     text_parts.append(f"===== {src.name} p{p} =====\n{t}")
                 mode = "visual" if words < a.min_words else "text+figure" if has_figure else "text"
@@ -110,10 +114,18 @@ def main():
             visual.append((dst, "image"))
 
     (out / "source.txt").write_text("\n\n".join(text_parts), encoding="utf-8")
-    (out / "manifest.tsv").write_text("\n".join(manifest) + "\n")
+    (out / "manifest.tsv").write_text("\n".join(manifest) + "\n", encoding="utf-8")
     sheets = glance_sheets(thumbs, out)
     words = sum(len(t.split()) for t in text_parts)
-    print(f"text layer: {words} words -> {out / 'source.txt'}")
+    han = sum(len(HAN.findall(t)) for t in text_parts)
+    latin = sum(len(re.findall(r"[A-Za-z]{2,}", t)) for t in text_parts)
+    if han + latin < 20:
+        print("language: unknown (little or no text layer): decide from the pages you read")
+    else:
+        print(f"language: {'zh (Chinese)' if han > latin else 'en (English)'}  "
+              f"({han} Chinese characters, {latin} English words)")
+    size = f"{han} Chinese characters + {latin} English words" if han > latin else f"{words} words"
+    print(f"text layer: {size} -> {out / 'source.txt'}")
     print(f"read visually ({len(visual)} pages):")
     for p, why in visual:
         print(f"  {p}   [{why}]")

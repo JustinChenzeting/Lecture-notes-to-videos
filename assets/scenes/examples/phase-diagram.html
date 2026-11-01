@@ -1,0 +1,31 @@
+<!doctype html>
+<!-- A Pb-Sn alloy (40% Sn) cooling through its phase diagram (data and builder from matterviz):
+     the state point moves down, the tie line and lever-rule fractions update, and a microscope
+     view shows solid grains growing, then the eutectic forming. 3 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script><script src="/kit/materials.js"></script>
+</head><body><script>
+const { C, text } = LV;
+const svg = LV.stage();
+LVM.ready.then(async () => {
+  const title = text(svg, 150, 80, "Cooling a 40% Sn solder", { "font-size": 54, serif: true });
+  const pd = LVM.phaseDiagram(svg, await LVM.phaseData("Pb-Sn"),
+                              { x: 150, y: 150, width: 820, height: 740, readout: [1060, 200] });
+  const micro = LVM.microstructure(svg, { x: 1420, y: 640, r: 230 });
+  const cap = text(svg, 1420, 930, "", { "text-anchor": "middle", "font-size": 36, fill: C.mute });
+  const c = 0.40, st = { T: 640 };
+  LV.beat(b => { b.write(title, 0, 900); b.hold(3000); });                                  // 1: liquid
+  LV.beat(b => b.add(st, { T: 460, duration: 6000, ease: "linear" }));                       // 2: FCC grains grow
+  LV.beat(b => b.add(st, { T: 400, duration: 3000, ease: "inOutSine" }));                    // 3: eutectic
+  LV.frame(() => {
+    const { tie } = pd.show(c, st.T);
+    const below = st.T < 456;
+    const fSolid = below ? 1 : tie ? tie.fL : 0;                     // FCC (Pb) is the left phase
+    micro.set(below ? 0.62 : fSolid, { solid: C.grn, matrix: below ? C.gold : C.blu });
+    cap.textContent = below ? "FCC grains in a eutectic mixture" : fSolid > 0 ? "FCC (Pb) grains growing in the liquid" : "all liquid";
+  });
+  LV.done();
+});
+</script></body></html>

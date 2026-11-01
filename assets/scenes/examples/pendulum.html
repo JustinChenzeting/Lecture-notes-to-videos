@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- A pendulum solved with LVB.ode (RK4, the exact equation), with its angle traced as a graph
+     beside it, so the swing and the sine-like curve are seen together. 3 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script>
+</head><body><script>
+const { C, text } = LV;
+const svg = LV.stage();
+const title = text(svg, 90, 110, "A pendulum: the angle follows a wave", { "font-size": 54, serif: true });
+const pend = LVB.pendulum(svg, { pivot: [480, 230], length: 520, angle: 35, metres: 1.5, damping: 0.08, seconds: 20 });
+const ax = LVB.axes(svg, { x: 1000, y: 330, width: 820, height: 420, xRange: [0, 10, 2], yRange: [-40, 40, 20],
+                           numbers: true, xLabel: "t", yLabel: "θ" });
+const curve = ax.plot(() => 0, { stroke: C.blu, "stroke-width": 5 });
+const eq = LV.math(svg, "T \\approx 2\\pi\\sqrt{L/g} = 2.46\\ \\text{s}", 1000, 900, { size: 54 });
+
+LV.beat(b => { b.write(title, 0, 900); b.hold(2000); });  // 1: released from 35 degrees
+LV.beat(b => b.hold(8000));                               // 2: it swings; the graph draws itself
+LV.beat(b => { b.write(eq, 300, 1200); b.hold(3000); });  // 3: the period
+LV.frame(t => {
+  const s = Math.max(0, LV.local(1, t));                  // seconds since release (beat 2)
+  pend.draw(s);
+  const deg = u => pend.state(u)[0] * 180 / Math.PI;
+  ax.plot(u => (u <= s ? deg(u) : NaN), {}, curve);       // NaN: not drawn yet
+});
+LV.done();
+</script></body></html>

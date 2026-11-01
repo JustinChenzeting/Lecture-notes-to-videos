@@ -14,10 +14,13 @@ Contents: 1 Engines and defaults · 2 Named voice profiles · 3 Cloned voices ·
 | macOS `say` | `--tts say` | macOS | `--voice "Daniel"`, etc. Lowest quality; last resort |
 | Chatterbox clone | `--voice <profile>` | `lv.py setup --clone` | see §3 |
 
-If Edge fails (offline, service error), rendering falls back to Kokoro `bf_emma` by itself.
+If Edge fails (offline, service error, or no reply for a line within about 30 s), rendering
+falls back to Kokoro `bf_emma` by itself.
 `--rate +0%` slows the default voice to ~150 wpm; adjust the word budget in SKILL.md §2 to match.
-Non-English lectures: pick a matching Edge voice (`de-DE-KatjaNeural`, `zh-CN-XiaoxiaoNeural`,
-…) and write the narration in that language; Kokoro's `lang` is fixed to British English.
+Chinese lectures have their own default (`zh-CN-YunxiNeural`), offline voice and rules:
+[chinese.md §6](chinese.md#6-voice). Other non-English lectures: pick a matching Edge voice
+(`de-DE-KatjaNeural`, …) and write the narration in that language; Kokoro's English model is
+fixed to British English.
 
 ## 2 Named voice profiles
 
@@ -75,3 +78,10 @@ Free British female options were auditioned (Oct 2026): Edge Sonia (default) and
 Kokoro bf_emma (B−), bf_isabella (C), bf_alice / bf_lily (D) per Kokoro's VOICES.md. Piper,
 F5, Sesame, Orpheus and Dia showed no verified British-female advantage; Qwen3-TTS voice
 design and Chatterbox Nano are worth a listening test later, not a default.
+
+Chinese (Oct 2026): all Edge zh-CN voices (and two zh-TW) plus eight Kokoro v1.1-zh voices read
+the same lever-rule passage in the house style (c prime, X L, alpha, 等于); Edge Yunxi was chosen
+by ear. Measured pace on plain Chinese at +0%: Xiaoxiao 253, Yunxi 266, Yunyang 278 characters a
+minute. Kokoro's Chinese front end (misaki) silently drops English words unless given an English
+pronouncer, so render_lecture.py passes it espeak-ng. For a cloned voice in Chinese, Chatterbox
+Multilingual and Qwen3-TTS (mlx-audio) are the candidates to audition; not built yet.

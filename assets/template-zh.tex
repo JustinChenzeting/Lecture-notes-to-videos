@@ -1,0 +1,105 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage[zh]{lecturevideo}   % Chinese lecture: XeLaTeX + ctex; theme + \say \wait \lvanim \attemptq
+\title{讲座标题}
+\subtitle{课程代码 \textperiodcentered\ 第 N 讲}
+\author{}\institute{}\date{}
+
+% Narration rules for Chinese: references/chinese.md. Maths is read as in English (c prime,
+% alpha, X L), operators in Chinese (等于, 加, 乘以); write a percent sign as \% inside \say.
+
+% Figure macros live in the preamble (a # inside a frame body breaks beamer).
+% Edge-dislocation lattice: #1 = core x. Upper atoms shift by a sigmoid around the core.
+\newcommand{\lattice}[1]{%
+  \foreach \r in {0,...,7}{\foreach \c in {0,...,15}{
+    \pgfmathsetmacro\xx{\c + (\r>3 ? 1/(1+exp(max(-9,min(9,-(#1-\c)*0.9)))) : 0)}
+    \pgfmathsetmacro\yy{\r + (\r>3 ? 0.12 : -0.12)*exp(-((\xx-#1)^2)/3)}
+    \node[atom,minimum size=7pt] at (\xx,\yy) {};}}
+  \draw[accent,dashed] (-0.6,3.5)--(16.6,3.5);
+  \node[note,anchor=west] at (16.7,3.5) {滑移面};
+  \ifdim#1pt<15.8pt\ifdim#1pt>-0.8pt\node[accent,font=\bfseries\Large] at (#1,3.62) {$\perp$};\fi\fi}
+
+\begin{document}
+
+% Title: \titlepage inside a normal frame so it can carry narration.
+\begin{frame}[plain]
+\say{用一两句话说清楚：这一讲讲什么，为什么重要。}
+\titlepage
+\end{frame}
+
+% Build-up frame: one \say per overlay page, overlay specs must match.
+\begin{frame}{一个概念，逐步展开}
+\say<1>{第一个要点。}
+\say<2>{第二个要点，同时图上多了一个新元素。}
+\begin{itemize}
+\item<1-> 第一点
+\item<2-> 第二点
+\end{itemize}
+\end{frame}
+
+% Derivation frame: physical model on the left, every algebra step on the right with its
+% reason, then the physical meaning. Explain each equation mathematically, then intuitively.
+\begin{frame}{推导杠杆定律}
+\say<1>{先把这张图记在脑子里。在这个温度下，合金分成了两相：一部分是成分为 c prime 的液相，另一部分是成分为 c double prime 的固相。总成分 c 落在两者之间。}
+\say<2>{第一步其实就是记账。所有的 B 原子都得有个去处，所以 c 等于 X L 乘以 c prime，加上 X S 乘以 c double prime。每一相贡献的，就是它的分数乘以它的成分。}
+\say<3>{第二步，只有两相，所以两相的分数加起来等于 1，也就是 X L 等于 1 减 X S。}
+\say<4>{把它代进第一步，这样剩下的未知数就只有 X S。}
+\say<5>{合并同类项再相除，就得到 X S 等于 c 减 c prime，除以 c double prime 减 c prime。这就是杠杆定律，也就是 lever rule。}
+\say<6>{这里固相的 B 含量高于液相。在这个温度下，两相各自的成分固定。要让合金整体含有更多 B，就需要更多固相。再看液相端点：当 c 等于 c prime 时，固相分数为 0。}
+\say<7>{连接线告诉我们两相各自的成分。质量守恒把这些成分换算成两相的含量。请解释：相的成分和相的质量分数有什么不同？需要更长时间，可以暂停。}
+\wait<8>{6} % The completed diagram remains visible during reflection.
+\begin{columns}[T]
+\begin{column}{0.42\textwidth}\centering
+\begin{tikzpicture}[x=0.5cm,y=0.5cm]
+  \draw[tie] (0,2)--(8,2);
+  \fill[blu] (0,2) circle (3pt) node[lab,above=3pt] {$c'$} node[note,below=4pt] {液相};
+  \fill[grn] (8,2) circle (3pt) node[lab,above=3pt] {$c''$} node[note,below=4pt] {固相};
+  \fill[accent] (3,2) circle (3pt) node[lab,above=3pt,accent] {$c$};
+  \only<6->{\draw[accent,thick] (3,1.2)--(2.6,0.6)--(3.4,0.6)--cycle;
+    \draw[accent,<->] (0,-0.3)--node[note,below] {$X_S$ 的力臂} (3,-0.3);
+    \draw[mute,<->] (3,-1.6)--node[note,below] {$X_L$ 的力臂} (8,-1.6);}
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.56\textwidth}\small
+\begin{tabular}{@{}l@{\quad}l@{}}
+\uncover<2->{$c = X_L\,c' + X_S\,c''$} & \uncover<2->{\color{mute}\footnotesize B 的质量守恒}\\[3pt]
+\uncover<3->{$X_L = 1 - X_S$} & \uncover<3->{\color{mute}\footnotesize 只有两相}\\[3pt]
+\uncover<4->{$c = (1-X_S)\,c' + X_S\,c''$} & \uncover<4->{\color{mute}\footnotesize 代入}\\[3pt]
+\uncover<5->{$\boxed{X_S = \dfrac{c-c'}{c''-c'}}$} & \uncover<5->{\color{mute}\footnotesize 合并 $X_S$，再相除}
+\end{tabular}\par\medskip
+\uncover<6->{{\color{accent}物理意义：}两相成分固定；整体 B 含量越高，富 B 固相越多。
+检验：$c=c'$ 时 $X_S=0$。}
+\end{column}
+\end{columns}
+\end{frame}
+
+% Animation: \lvanim{first}{frames}{code with \lvt from 0 to 1}, narrated by ONE \say spanning it.
+% Example: edge dislocation glide. Upper half-crystal atoms shift by a sigmoid around the core.
+\begin{frame}{动画：刃型位错的滑移}
+\say<1>{这是一块完美的晶体。一个位错即将从左边进入，沿着滑移面前进。}
+\say<2-13>{在切应力作用下，位错的核心向右滑移。每个原子经过时只挪动一点点，可是位错一旦滑出，上半块晶体就整体滑移了一个伯格斯矢量，也就是 Burgers vector，在表面留下一个台阶。}
+\say<14>{位错已经离开晶体，上半块晶体仍然错开一个伯格斯矢量。位错的局部移动造成了永久滑移。请解释：局部发生了什么移动，整个晶体留下了什么变化？需要更长时间，可以暂停。}
+\wait<15>{6}
+\centering
+\begin{tikzpicture}[x=0.55cm,y=0.55cm]
+
+\only<1>{\lattice{-4}}
+\lvanim{2}{12}{\pgfmathsetmacro\cx{-4+23*\lvt}\lattice{\cx}}
+\only<14->{\lattice{19}} % Keep the final state visible during reflection.
+\end{tikzpicture}
+\end{frame}
+
+% DEMONSTRATION ONLY: replace with the user's actual homework and original exercise ID.
+\attemptq[15]{格式示例：质量守恒}
+  {固定温度 $T_3$ 下，液相含 $c'=20$ wt.\% B，固相含 $c''=85$ wt.\% B。
+   固相质量分数 $X_S=0.30$。\par\smallskip
+   (a) 求合金总成分。(b) 有人说液相质量分数也为 0.30，请用质量守恒检验。}
+  {在固定温度 T three 下，液相含 20\% B，固相含 85\% B。固相质量分数为 0.30。
+   求合金总成分，再用质量守恒检验液相质量分数也为 0.30 的说法。建议用 3 分钟尝试。}
+  {$X_L=1-0.30=0.70$。\par\medskip
+   $c=0.70(20)+0.30(85)=39.5$ wt.\% B。\par\medskip
+   两个质量分数都是 $0.30$ 时，总和只有 $0.60$，不等于 $1$，不满足质量守恒。}
+  {只有两相，所以质量分数之和为 1。液相质量分数为 0.70。各相质量分数乘以各自的成分，
+   再相加，得到总成分 39.5\% B。如果两相质量分数都是 0.30，总和只有 0.60，不满足质量守恒。}
+
+% Also deliver recall.md and recall-answers.md in Chinese.
+\end{document}

@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- An edge dislocation gliding through a crystal, with a Burgers circuit drawn around it: the
+     circuit fails to close, and the gap is the Burgers vector b. 4 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script><script src="/kit/materials.js"></script>
+</head><body><script>
+const { C, text } = LV;
+const svg = LV.stage();
+const title = text(svg, 160, 110, "An edge dislocation glides", { "font-size": 54, serif: true });
+const d = LVM.edgeDislocation(svg, { x: 240, y: 250, cols: 16, rows: 8, sp: 90 });
+const bLab = text(svg, 0, 0, "b", { "font-size": 56, fill: C.accent, "font-style": "italic", serif: true });
+const st = { core: -2, circ: 0 };
+LV.beat(b => { b.write(title, 0, 900); b.hold(2500); });                                     // 1: perfect crystal
+LV.beat(b => b.add(st, { core: 7.5, duration: 5000, ease: "inOutSine" }));                    // 2: glides in
+LV.beat(b => { b.add(st, { circ: 1, duration: 3000, ease: "linear" }); b.hold(4500); });       // 3: Burgers circuit
+LV.beat(b => { b.add(st, { circ: 0, duration: 300 }); b.add(st, { core: 17.5, duration: 5000, ease: "inOutSine" }, 300); });  // 4: out
+LV.frame(() => {
+  d.draw(st.core);
+  const k = d.circuit(5, 1, 5, 5, st.circ);
+  const show = st.circ >= 1 && !k.closed;
+  bLab.setAttribute("visibility", show ? "visible" : "hidden");
+  bLab.setAttribute("x", (k.start[0] + k.end[0]) / 2 - 10); bLab.setAttribute("y", k.start[1] + 60);
+});
+LV.done();
+</script></body></html>

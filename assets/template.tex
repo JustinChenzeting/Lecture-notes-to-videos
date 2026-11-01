@@ -1,5 +1,5 @@
 \documentclass[aspectratio=169,11pt]{beamer}
-\usepackage{lecturevideo}   % theme + \say \wait \lvanim \examq
+\usepackage{lecturevideo}   % theme + \say \wait \lvanim \attemptq + \lvwrite \lvzoom ... (visual-style.md)
 \title{Lecture title in sentence case}
 \subtitle{Course code \textperiodcentered\ Lecture N}
 \author{}\institute{}\date{}
@@ -33,6 +33,28 @@
 \end{itemize}
 \end{frame}
 
+% Teaching visuals (references/visual-style.md): the picture first, one colour per idea, a label
+% hand-written as it is said (\lvwrite: one ranged \say covers its pages), a halo on what "this"
+% is, and a camera zoom (\lvzoom) that pulls back on the next page.
+\begin{frame}{Teaching visuals: write, point, zoom}
+\say<1>{Picture first: a beam on a pivot, a blue load on the left and a green push on the right.}
+\say<2-7>{The blue block is the load, the weight we want to lift.}
+\say<8>{Now look closely at the pivot. This point is the fulcrum, and every turning effect is measured from here.}
+\say<9>{Pull back, and the balance reads: load times its distance equals effort times its distance.}
+\lvzoom<8>{0.5}{0.55}{2}
+\centering
+\begin{tikzpicture}
+  \useasboundingbox (-3.3,-2.1) rectangle (3.3,1.7);  % fixed size: later labels don't shift it
+  \draw[ink,line width=3pt] (-3,0) -- (3,0);
+  \fill[mute] (0,0) -- (-0.3,-0.5) -- (0.3,-0.5) -- cycle;
+  \fill[blu!60] (-2.8,0.05) rectangle ++(0.8,0.8);
+  \draw[-{Stealth},grn,very thick] (2.6,1.3) -- (2.6,0.1);
+  \node[blu] at (-2.4,1.3) {\lvwrite{2}{6}{load}};
+  \only<8->{\lvhalo{(0,-0.05)}\node[note,below=8pt] at (0,-0.5) {fulcrum};}
+  \only<9>{\node at (0,-1.7) {$\textcolor{blu}{W\,d_1}=\textcolor{grn}{F\,d_2}$};}
+\end{tikzpicture}
+\end{frame}
+
 % Derivation frame: physical model on the left, every algebra step on the right with its
 % reason, then the physical meaning. Explain each equation mathematically, then intuitively.
 \begin{frame}{Deriving the lever rule}
@@ -41,7 +63,9 @@
 \say<3>{Step two: there are only two phases, so their fractions have to add up to one. That lets us write the liquid fraction as one minus the solid fraction.}
 \say<4>{Now substitute that into step one, so the only unknown left is the solid fraction.}
 \say<5>{Collect the terms and divide. The solid fraction is c minus c prime, over c double prime minus c prime.}
-\say<6>{Now physically. Think of the tie line as a seesaw balanced at c. The closer c sits to the solid end, the more solid you have. So you always read the lever arm on the opposite side. And check the extremes: if c sits right at c prime, the formula gives zero solid, which is exactly right.}
+\say<6>{Here the solid contains more B than the liquid. At this temperature, both phase compositions are fixed. An alloy with more B must therefore contain more solid. Check the liquid endpoint: when c equals c prime, the solid fraction is zero.}
+\say<7>{The tie line gives the phase compositions. Mass balance converts those compositions into phase amounts. Explain why composition and phase fraction are different quantities. Pause longer if you need to.}
+\wait<8>{6} % Keep the completed diagram and equations visible while the learner connects them.
 \begin{columns}[T]
 \begin{column}{0.42\textwidth}\centering
 \begin{tikzpicture}[x=0.5cm,y=0.5cm]
@@ -61,8 +85,8 @@
 \uncover<4->{$c = (1-X_S)\,c' + X_S\,c''$} & \uncover<4->{\color{mute}\footnotesize substitute}\\[3pt]
 \uncover<5->{$\boxed{X_S = \dfrac{c-c'}{c''-c'}}$} & \uncover<5->{\color{mute}\footnotesize collect $X_S$, divide}
 \end{tabular}\par\medskip
-\uncover<6->{{\color{accent}Physically:} a seesaw balanced at $c$. Read the arm on the
-\emph{opposite} side. Check: $c=c'$ gives $X_S=0$.}
+\uncover<6->{{\color{accent}Physically:} fixed phase compositions; more overall B requires
+more of the B-rich solid. Check: $c=c'$ gives $X_S=0$.}
 \end{column}
 \end{columns}
 \end{frame}
@@ -72,20 +96,38 @@
 \begin{frame}{Animation: an edge dislocation glides}
 \say<1>{Here is a perfect crystal. A dislocation is about to enter from the left, along the slip plane.}
 \say<2-13>{Under shear, the core glides to the right. Each atom shifts only slightly as it passes, yet once the dislocation exits, the top half has slipped by one Burgers vector, leaving a step on the surface.}
+\say<14>{The dislocation has left the crystal. The top half remains displaced by one Burgers vector. Local motion of the defect has produced permanent slip. Explain what moved locally and what changed across the crystal. Pause longer if you need to.}
+\wait<15>{6}
 \centering
 \begin{tikzpicture}[x=0.55cm,y=0.55cm]
 
 \only<1>{\lattice{-4}}
 \lvanim{2}{12}{\pgfmathsetmacro\cx{-4+23*\lvt}\lattice{\cx}}
+\only<14->{\lattice{19}} % Hold the final animation state during consolidation.
 \end{tikzpicture}
 \end{frame}
 
-% Exam-style checkpoint: specific, numeric, answerable from this lecture alone.
-\examq[5]{Checkpoint: the lever rule}
-  {At $T_3$ the tie line runs from $c'=20$ wt.\% B (liquid) to $c''=85$ wt.\% B (solid).
-   An alloy with $c=40$ wt.\% B: what fraction is solid?}
-  {At T three, the tie line runs from twenty weight percent B in the liquid to eighty five in the solid. For an alloy at forty weight percent B, what fraction is solid?}
-  {$X_S=\dfrac{40-20}{85-20}=\dfrac{20}{65}\approx 0.31$, so about 31\% solid, 69\% liquid.}
-  {The solid fraction is forty minus twenty, over eighty five minus twenty: twenty over sixty five, about thirty one percent.}
+% DEMONSTRATION ONLY, not sourced homework. Before generation, ask for the actual problem
+% set and replace this item with a selected original question, figure, and exercise ID.
+% The hold is a buffer for manually pausing the player; it is not a 15-second solve limit.
+\attemptq[15]{Example only: use mass balance}
+  {At fixed $T_3$, liquid has $c'=20$ wt.\% B and solid has $c''=85$ wt.\% B.
+   The solid mass fraction is $X_S=0.30$.\par\smallskip
+   (a) Find the overall composition. (b) Check a claim that the liquid fraction is also 0.30.
+   Justify your conclusion using mass balance.}
+  {At a fixed temperature T three, the liquid contains twenty weight percent B and the solid
+   contains eighty five. The solid mass fraction is zero point three. Find the overall
+   composition. Then check the claim that the liquid fraction is also zero point three.
+   Justify your conclusion using mass balance. Allow about three minutes for your attempt.}
+  {$X_L=1-0.30=0.70$.\par\medskip
+   $c=0.70(20)+0.30(85)=39.5$ wt.\% B.\par\medskip
+   The proposed fractions sum to $0.60$, not $1$, so they cannot describe these two phases.
+   If the fractions were swapped, $c=0.30(20)+0.70(85)=65.5$ wt.\% B, a different alloy.}
+  {Only two phases are present, so their mass fractions add to one. The liquid fraction is
+   therefore zero point seven. Multiply each mass fraction by its phase composition and add:
+   the overall composition is thirty nine point five weight percent B. Assigning zero point
+   three to both phases accounts for only sixty percent of the mass. Swapping their fractions
+   would instead give sixty five point five weight percent B.}
 
+% Also deliver recall.md and recall-answers.md; see references/learning-design.md.
 \end{document}

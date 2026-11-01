@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- The double slit with LVQ.wave2d (Visscher's method, the default of marl0ny's QM-Simulator-2D):
+     one wave packet passes both slits and interferes with itself. Brightness is probability,
+     colour the phase. 3 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/kit/lv.js"></script><script src="/kit/blocks.js"></script><script src="/kit/quantum.js"></script>
+</head><body><script>
+const { C, text } = LV;
+const svg = LV.stage();
+const title = text(svg, 80, 130, "One electron, two slits", { "font-size": 60, serif: true });
+const l1 = text(svg, 80, 230, "brightness: probability", { "font-size": 40, fill: C.mute });
+const l2 = text(svg, 80, 285, "colour: phase of the wave", { "font-size": 40, fill: C.mute });
+const fr = text(svg, 80, 900, "bright and dark fringes:", { "font-size": 44, fill: C.accent });
+const fr2 = text(svg, 80, 955, "the two halves interfere", { "font-size": 44, fill: C.accent });
+const sim = LVQ.wave2d({ N: 256, V: LVQ.V.doubleSlit({ wallX: -0.05, slit: 0.035, separation: 0.14 }),
+                         packet: { x0: -0.3, y0: 0, kx: 220, ky: 0, sigma: 0.08 } });
+const view = LVQ.plot2d(sim, { x: 720, y: 130, size: 820 });
+
+const SPEED = 0.0004, T_MAX = 0.0029;   // simulated time per second of video; stop before the box walls
+LV.beat(b => { b.write(title, 0, 800); b.show([l1, l2], 800, 500); b.hold(2500); });  // 1: the setup
+LV.beat(b => b.hold(4000));                                  // 2: through both slits at once
+LV.beat(b => { b.show([fr, fr2], 1500, 600); b.hold(5000); }); // 3: interference
+LV.frame(t => view.draw(Math.min(T_MAX, Math.max(0, LV.local(1, t)) * SPEED)));
+LV.done();
+</script></body></html>

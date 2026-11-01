@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- A molecule in 3D with 3Dmol.js (BSD-3): ball-and-stick benzene turning, from inline XYZ
+     coordinates (any .xyz, .sdf, .pdb or .cif text works). 2 beats. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/lib/katex.min.css">
+<script src="/lib/anime.umd.min.js"></script><script src="/lib/katex.min.js"></script>
+<script src="/lib/3Dmol-min.js"></script><script src="/kit/lv.js"></script>
+</head><body><div id="v" style="position:absolute;left:0;top:0;width:1920px;height:1080px"></div><script>
+const { C, text } = LV;
+const svg = LV.stage(); svg.style.zIndex = 2;
+const title = text(svg, 100, 120, "Benzene: a flat ring of six carbons", { "font-size": 56, serif: true });
+// XYZ for benzene: C ring of radius 1.39 A, H at 2.47 A
+let xyz = "12\nbenzene\n";
+for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; xyz += `C ${(1.39 * Math.cos(a)).toFixed(3)} ${(1.39 * Math.sin(a)).toFixed(3)} 0\n`; }
+for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; xyz += `H ${(2.47 * Math.cos(a)).toFixed(3)} ${(2.47 * Math.sin(a)).toFixed(3)} 0\n`; }
+const viewer = $3Dmol.createViewer(document.getElementById("v"), { backgroundColor: C.paper, antialias: true });
+viewer.addModel(xyz, "xyz");
+viewer.setStyle({}, { stick: { radius: 0.16, colorscheme: "Jmol" }, sphere: { scale: 0.28, colorscheme: "Jmol" } });
+viewer.zoomTo(); viewer.zoom(0.9);
+const base = viewer.getView();
+LV.beat(b => { b.write(title, 0, 900); b.hold(3500); });   // 1: seen from above
+LV.beat(b => b.hold(5000));                                 // 2: it turns: flat
+LV.frame(t => {
+  viewer.setView(base);
+  viewer.rotate(Math.min(80, 16 * Math.max(0, LV.local(1, t))), "x");
+  viewer.rotate(10 * t, "z");
+  viewer.render();
+});
+LV.done();
+</script></body></html>
